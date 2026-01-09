@@ -1,0 +1,134 @@
+name: Flutter CI/CD
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [master, develop]  # Add 'develop' here
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      # Cache dependencies before fetching them
+      - uses: actions/cache@v3
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+      - run: flutter pub get
+      - run: flutter test
+
+      # Set up signing
+      - name: Decode Keystore
+        run: |
+          mkdir keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/release-key.jks
+          ls -alh keystore
+      - name: Create key.properties
+        run: |
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=$(pwd)/keystore/release-key.jks" >> android/key.properties
+          
+      # Setup Google Services (Firebase Crashlytics, etc.)
+      - name: Setup Google Services
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > android/app/google-services.json
+#          echo "${{ secrets.GOOGLE_SERVICES_PLIST }}" | base64 -d > ios/Runner/GoogleService-Info.plist
+      
+      # Sanitize branch name for filenames
+      - name: Prepare branch name
+        run: |
+          BRANCH="$GITHUB_REF_NAME"
+          SAFE=$(echo "$BRANCH" | tr '/ ' '-' | tr -cd '[:alnum.]._-')
+          echo "BRANCH=$SAFE" >> $GITHUB_ENV
+          echo "Using branch name: $SAFE"
+      
+      # Build both flavors (standard and foss)
+      - name: Build APKs (standard + foss)
+        run: |
+          flutter build apk --release --flavor standard
+          flutter build apk --release --flavor foss
+      
+      - name: Rename APKs and create checksums
+        run: |
+          set -euo pipefail
+          
+          # Locate the built APKs (Flutter output)
+          STD_APK="build/app/outputs/flutter-apk/app-standard-release.apk"
+          FOSS_APK="build/app/outputs/flutter-apk/app-foss-release.apk"
+          
+          if [ ! -f "$STD_APK" ] || [ ! -f "$FOSS_APK" ]; then
+            echo "Error: Could not locate both flavor APKs. Available APKs:"
+            find build/app/outputs -type f -name "*.apk" 2>/dev/null || echo "No APKs found"
+            exit 1
+          fi
+          
+          # Rename APKs
+          mv "$STD_APK" "vivant-${{ env.BRANCH }}.apk"
+          mv "$FOSS_APK" "vivant-${{ env.BRANCH }}-foss.apk"
+          
+          # Generate SHA1 checksums
+          sha1sum "vivant-${{ env.BRANCH }}.apk" > "vivant-${{ env.BRANCH }}.apk.sha1"
+          sha1sum "vivant-${{ env.BRANCH }}-foss.apk" > "vivant-${{ env.BRANCH }}-foss.apk.sha1"
+          
+          # List generated files
+          ls -lh vivant-*.apk*
+
+      # Upload both flavor APKs as artifacts
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vivant-apks-${{ env.BRANCH }}
+          path: |
+            vivant-${{ env.BRANCH }}.apk
+            vivant-${{ env.BRANCH }}.apk.sha1
+            vivant-${{ env.BRANCH }}-foss.apk
+            vivant-${{ env.BRANCH }}-foss.apk.sha1
+
+      # Prepare release tag (master-only)
+      - name: Prepare release tag
+        if: success() && github.ref_name == 'master'
+        run: |
+          set -euo pipefail
+          # Generate date-based tag (UTC)
+          TAG="v$(date -u +'%Y.%m.%d')"
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=CNVRT $TAG" >> "$GITHUB_ENV"
+          echo "Generated release tag: $TAG"
+
+      # Create GitHub Release with both flavors (master-only)
+      - name: Create GitHub Release
+        if: success() && github.ref_name == 'master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_NAME }}
+          draft: false
+          prerelease: false
+          make_latest: true
+          fail_on_unmatched_files: true
+          files: |
+            vivant-${{ env.BRANCH }}.apk
+            vivant-${{ env.BRANCH }}.apk.sha1
+            vivant-${{ env.BRANCH }}-foss.apk
+            vivant-${{ env.BRANCH }}-foss.apk.sha1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Deploy to Google Play Store
+      # - name: Deploy to Play Store (master)
+      #   if: github.ref_name == 'master'
+      #   uses: r0adkll/upload-google-play@v1
+      #   with:
+      #     serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
+      #     packageName: your.package.name
+      #     releaseFiles: build/app/outputs/flutter-apk/app-release.apk
+      #     track: internal # Or production, beta, alpha
+      #     status: completed # Or draft
