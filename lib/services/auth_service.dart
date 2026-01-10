@@ -122,6 +122,19 @@ class AuthService {
     return user?.uid ?? await _secureStorage.read(key: _userIdKey);
   }
 
+  // Get current Firebase user info
+  Map<String, String?>? getCurrentUserInfo() {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) return null;
+    
+    return {
+      'uid': user.uid,
+      'email': user.email,
+      'displayName': user.displayName,
+      'photoURL': user.photoURL,
+    };
+  }
+
   // Convenience method that calls signInWithGoogle
   Future<bool> signIn() async {
     return await signInWithGoogle();

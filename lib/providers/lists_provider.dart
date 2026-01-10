@@ -24,13 +24,26 @@ class ListsProvider with ChangeNotifier {
   }
 
   // Load user's lists
-  Future<void> loadLists() async {
+  Future<void> loadLists({bool ensureDefaults = true}) async {
     _setLoading(true);
 
     try {
       _lists = await convexService.getUserLists();
       _error = null;
       Logger.info('Loaded ${_lists.length} lists');
+
+      // Ensure default lists exist if no lists are found
+      if (_lists.isEmpty && ensureDefaults) {
+        Logger.info('No lists found, ensuring default lists...');
+        try {
+          await convexService.ensureDefaultLists();
+          // Reload lists after creating defaults
+          _lists = await convexService.getUserLists();
+          Logger.info('Default lists created, now have ${_lists.length} lists');
+        } catch (e) {
+          Logger.warning('Failed to ensure default lists: $e');
+        }
+      }
     } catch (e) {
       _error = 'Failed to load lists: $e';
       Logger.error(_error!);

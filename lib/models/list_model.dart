@@ -26,9 +26,9 @@ class ListModel {
       name: json['name'] as String,
       emoji: json['emoji'] as String,
       isDefault: json['isDefault'] as bool,
-      createdAt: json['createdAt'] as int,
-      updatedAt: json['updatedAt'] as int,
-      placeCount: json['placeCount'] as int?,
+      createdAt: (json['createdAt'] as num).toInt(),
+      updatedAt: (json['updatedAt'] as num).toInt(),
+      placeCount: json['placeCount'] != null ? (json['placeCount'] as num).toInt() : null,
     );
   }
 

@@ -42,6 +42,23 @@ class AuthProvider with ChangeNotifier {
         if (token != null) {
           convexService.setAuthToken(token);
           _userId = userId;
+
+          // Sync user to Convex and ensure default lists
+          try {
+            final userInfo = authService.getCurrentUserInfo();
+            if (userInfo != null && userInfo['uid'] != null && userInfo['email'] != null) {
+              await convexService.getOrCreateUser(
+                firebaseUid: userInfo['uid']!,
+                email: userInfo['email']!,
+                name: userInfo['displayName'],
+                imageUrl: userInfo['photoURL'],
+              );
+            }
+            await convexService.ensureDefaultLists();
+          } catch (e) {
+            Logger.warning('Failed to sync user or ensure default lists: $e');
+          }
+
           _setState(AuthState.authenticated);
           Logger.info('User is authenticated');
         } else {
@@ -70,11 +87,20 @@ class AuthProvider with ChangeNotifier {
           convexService.setAuthToken(token);
           _userId = userId;
 
-          // Ensure default lists exist for new users
+          // Sync user to Convex and ensure default lists
           try {
+            final userInfo = authService.getCurrentUserInfo();
+            if (userInfo != null && userInfo['uid'] != null && userInfo['email'] != null) {
+              await convexService.getOrCreateUser(
+                firebaseUid: userInfo['uid']!,
+                email: userInfo['email']!,
+                name: userInfo['displayName'],
+                imageUrl: userInfo['photoURL'],
+              );
+            }
             await convexService.ensureDefaultLists();
           } catch (e) {
-            Logger.warning('Failed to ensure default lists: $e');
+            Logger.warning('Failed to sync user or ensure default lists: $e');
           }
 
           _setState(AuthState.authenticated);

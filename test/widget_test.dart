@@ -7,10 +7,7 @@ import 'package:vivant/screens/auth/login_screen.dart';
 void main() {
   testWidgets('App smoke test - verifies auth gate loads', (WidgetTester tester) async {
     // Create mock services
-    final authService = AuthService(
-      clerkDomain: 'test.clerk.dev',
-      publishableKey: 'pk_test_mock',
-    );
+    final authService = AuthService();
     final convexService = ConvexService(baseUrl: 'https://test.convex.cloud');
 
     // Build our app and trigger a frame.

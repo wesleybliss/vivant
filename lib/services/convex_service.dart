@@ -109,6 +109,42 @@ class ConvexService {
     }
   }
 
+  // Mutation: Get or create user in Convex database
+  Future<String> getOrCreateUser({
+    required String firebaseUid,
+    required String email,
+    String? name,
+    String? imageUrl,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/mutation'),
+        headers: _headers,
+        body: jsonEncode({
+          'path': 'users:getOrCreateUser',
+          'args': {
+            'firebaseUid': firebaseUid,
+            'email': email,
+            if (name != null) 'name': name,
+            if (imageUrl != null) 'imageUrl': imageUrl,
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        Logger.info('User synced to Convex');
+        return data['value'] as String;
+      } else {
+        Logger.error('Failed to sync user: ${response.statusCode}');
+        throw Exception('Failed to sync user: ${response.statusCode}');
+      }
+    } catch (e) {
+      Logger.error('Error syncing user: $e');
+      rethrow;
+    }
+  }
+
   // Mutation: Ensure default lists exist
   Future<bool> ensureDefaultLists() async {
     try {
