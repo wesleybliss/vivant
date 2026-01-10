@@ -6,6 +6,8 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 val keystoreProperties = Properties()
@@ -95,14 +97,3 @@ flutter {
     source = "../.."
 }
 
-// Apply Firebase plugins only for standard release builds
-// Debug builds use .debug suffix which isn't in google-services.json
-// FOSS builds don't have this file
-val googleServicesFile = file("src/standard/google-services.json")
-val isStandardRelease = gradle.startParameter.taskNames.any { 
-    it.contains("Standard") && it.contains("Release") 
-}
-if (googleServicesFile.exists() && isStandardRelease) {
-    apply(plugin = "com.google.gms.google-services")
-    apply(plugin = "com.google.firebase.crashlytics")
-}

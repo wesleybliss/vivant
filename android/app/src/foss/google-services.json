@@ -12,7 +12,20 @@
           "package_name": "com.gammagamma.vivant"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "123434619876-1x5xxxxxxxxx0x0xxxxx7xxxxx3xxxxx.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gammagamma.vivant",
+            "certificate_hash": "123434619876-1x5xxxxxxxxx0x0xxxxx7xxxxx3"
+          }
+        },
+        {
+          "client_id": "123434619876-1x5xxxxxxxxx0x0xxxxx7xxxxx3xxxxx.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDummyKeyForFOSSBuilds0000000000000"

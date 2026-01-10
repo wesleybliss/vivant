@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "480934611158",
+    "project_id": "vivant-24bb2",
+    "storage_bucket": "vivant-24bb2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:480934611158:android:2fb8ef0ef40cf1c2592177",
+        "android_client_info": {
+          "package_name": "com.gammagamma.vivant"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "480934611158-0b1o9rrcgmka0o0loenv7qeovh3ervcu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gammagamma.vivant",
+            "certificate_hash": "24f24e5cfe85b4b389cf528758c2b49c89334aa6"
+          }
+        },
+        {
+          "client_id": "480934611158-62oudm5vmukmj6p227rtpnvb5925ukbl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDdEv3Mh-idmZr9cTBLwOqrT0hYiKBqaU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "480934611158-62oudm5vmukmj6p227rtpnvb5925ukbl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "480934611158-9kt5qhgol30v3a48eajcmv5flmfpuo6s.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.gammagamma.vivant"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:480934611158:android:40b367bd822916c1592177",
+        "android_client_info": {
+          "package_name": "com.gammagamma.vivant.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "480934611158-9ahhnh6lplb9fg01m5m8fi0dcadqisrg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gammagamma.vivant.debug",
+            "certificate_hash": "24f24e5cfe85b4b389cf528758c2b49c89334aa6"
+          }
+        },
+        {
+          "client_id": "480934611158-62oudm5vmukmj6p227rtpnvb5925ukbl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDdEv3Mh-idmZr9cTBLwOqrT0hYiKBqaU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "480934611158-62oudm5vmukmj6p227rtpnvb5925ukbl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "480934611158-9kt5qhgol30v3a48eajcmv5flmfpuo6s.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.gammagamma.vivant"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

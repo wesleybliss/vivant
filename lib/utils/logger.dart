@@ -131,4 +131,27 @@ class Logger {
   void v(dynamic message) {
     _print(LogLevel.verbose, message);
   }
+
+  // Static convenience methods for quick logging
+  static final _defaultLogger = Logger('App');
+
+  static void info(dynamic message) {
+    _defaultLogger.i(message);
+  }
+
+  static void error(dynamic message, [Object? error, StackTrace? stackTrace]) {
+    _defaultLogger.e(message, error, stackTrace);
+  }
+
+  static void warning(dynamic message, [Object? error, StackTrace? stackTrace]) {
+    _defaultLogger.w(message, error, stackTrace);
+  }
+
+  static void debug(dynamic message) {
+    _defaultLogger.d(message);
+  }
+
+  static void verbose(dynamic message) {
+    _defaultLogger.v(message);
+  }
 }

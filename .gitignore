@@ -35,9 +35,12 @@ migrate_working_dir/
 /coverage/
 
 # Firebase
-/android/app/src/standard/google-services.json
+/android/app/src/standard/old1.google-services.json
 # /android/app/src/foss/google-services.json # File kept for FOSS variant, since it's just a stub
 # /lib/firebase_options.dart
+
+# Environment variables
+.env
 
 # Symbolication related
 app.*.symbols
