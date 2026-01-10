@@ -6,7 +6,7 @@ import 'package:vivant/domain/constants/constants.dart';
 import 'package:vivant/providers/auth_provider.dart';
 import 'package:vivant/providers/lists_provider.dart';
 import 'package:vivant/screens/auth/login_screen.dart';
-import 'package:vivant/screens/lists/lists_screen.dart';
+import 'package:vivant/screens/main_navigation_screen.dart';
 import 'package:vivant/services/auth_service.dart';
 import 'package:vivant/services/convex_service.dart';
 import 'package:vivant/utils/firebase.dart';
@@ -77,7 +77,31 @@ class Vivant extends StatelessWidget {
       child: MaterialApp(
         title: 'Vivant',
         theme: ThemeData(
-          primarySwatch: Colors.grey,
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF6495ED), // Cornflower blue from mockup
+            brightness: Brightness.light,
+          ),
+          cardTheme: CardThemeData(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
+            ),
+          ),
+          chipTheme: ChipThemeData(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         home: const AuthGate(),
@@ -116,7 +140,7 @@ class _AuthGateState extends State<AuthGate> {
           ),
         );
       case AuthState.authenticated:
-        return const ListsScreen();
+        return const MainNavigationScreen();
       case AuthState.unauthenticated:
       case AuthState.error:
         return const LoginScreen();
