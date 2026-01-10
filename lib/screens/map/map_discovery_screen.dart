@@ -34,6 +34,13 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
     ),
   };
 
+  @override
+  void initState() {
+    super.initState();
+    // Warm up the security headers so images can load immediately
+    _placesService.initialize();
+  }
+
   Future<void> _handlePlaceSelection(dynamic result) async {
     if (result == null) {
       _logger.d('Place selection result is null');
@@ -43,6 +50,7 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
     _logger.i('Handling place selection: $result');
     setState(() {
       _isSearching = true;
+      _searchResults = [];
     });
 
     try {
@@ -107,6 +115,10 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                 );
               }
             }
+
+            // BACKGROUND FETCH: Standard search only gives 1 photo. 
+            // Fetch full details for the top results to show the carousel.
+            _fetchExtraDetailsForTopResults();
           } else {
             _logger.i('No results found for search query');
             _markers = {};
@@ -116,8 +128,30 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
     } catch (e, stack) {
       _logger.e('Error handling place selection', e, stack);
     } finally {
-      setState(() {
-        _isSearching = false;
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+        });
+      }
+    }
+  }
+
+  void _fetchExtraDetailsForTopResults() {
+    // Only fetch for top 5 to be respectful of quota and speed
+    for (int i = 0; i < _searchResults.length && i < 5; i++) {
+      final placeId = _searchResults[i].placeId;
+      _placesService.getPlaceDetails(placeId).then((fullDetails) {
+        if (fullDetails != null && mounted) {
+          setState(() {
+            // Update the existing result with full details (more photos!)
+            final index = _searchResults.indexWhere((p) => p.placeId == placeId);
+            if (index != -1) {
+              _searchResults[index] = fullDetails;
+            }
+          });
+        }
+      }).catchError((e) {
+        _logger.w('Failed to fetch details for $placeId in background: $e');
       });
     }
   }
@@ -161,7 +195,6 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
-            // Stub markers - would be loaded from API
             markers: _markers,
           ),
           
@@ -214,6 +247,14 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                                   onPressed: () {
                                     setState(() {
                                       _searchQuery = '';
+                                      _searchResults = [];
+                                      _markers = {
+                                        Marker(
+                                          markerId: const MarkerId('luna_rooftop'),
+                                          position: const LatLng(40.7589, -73.9851),
+                                          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                                        ),
+                                      };
                                     });
                                   },
                                   constraints: const BoxConstraints(),
@@ -440,6 +481,7 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                         final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? 'AIzaSyBs9FDiIQKQh9YVqI9cVgh4FWH9_AF-NUY';
                         
                         if (place.photoReferences != null) {
+                          // Show up to 5 photos in carousel
                           for (var ref in place.photoReferences!.take(5)) {
                             photoUrls.add('https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=$ref&key=$apiKey');
                           }
@@ -479,8 +521,6 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                           types: ['cocktail_bar'],
                           formattedAddress: '620 8th Ave, New York, NY',
                         ),
-                        // Mock photo for visual testing if needed
-                        photoUrls: [], 
                       ),
                       _buildPlaceCard(
                         place: PlaceDetails(
@@ -533,12 +573,15 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
     // Format category
     String categoryDisplay = 'Place';
     if (place.types != null && place.types!.isNotEmpty) {
-      // Get the first interesting type
       final interestingTypes = place.types!.where((t) => t != 'point_of_interest' && t != 'establishment').toList();
       if (interestingTypes.isNotEmpty) {
         categoryDisplay = interestingTypes[0].replaceAll('_', ' ').split(' ').map((s) => s[0].toUpperCase() + s.substring(1)).join(' ');
       }
     }
+
+    final totalPhotos = place.photoReferences?.length ?? 0;
+    final displayPhotosCount = photoUrls.length;
+    final hasMore = totalPhotos > displayPhotosCount;
 
     return InkWell(
       onTap: () {
@@ -637,7 +680,7 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                     ),
                   ),
                   
-                  // Primary Thumbnail (if no carousel) or Small placeholder
+                  // Simple small icon if no photos at all
                   if (photoUrls.isEmpty)
                     Container(
                       width: 80,
@@ -659,8 +702,11 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: photoUrls.length,
+                  itemCount: hasMore ? photoUrls.length + 1 : photoUrls.length,
                   itemBuilder: (context, index) {
+                    if (hasMore && index == photoUrls.length) {
+                      return _buildMorePhotosTile(totalPhotos);
+                    }
                     return Container(
                       width: 160,
                       margin: const EdgeInsets.only(right: 8),
@@ -695,6 +741,42 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                   const SizedBox(width: 8),
                   _buildActionButton(Icons.bookmark_border, 'Save', colorScheme.primary),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMorePhotosTile(int totalCount) {
+    return Container(
+      width: 120,
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey.shade200,
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.add_a_photo_outlined, color: Colors.black54),
+            const SizedBox(height: 4),
+            Text(
+              'See all $totalCount',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            const Text(
+              'photos',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
               ),
             ),
           ],
@@ -750,7 +832,6 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
   int _priceLevel = 2; // $ = 1, $$ = 2, $$$ = 3, $$$$ = 4
   double _minRating = 4.0;
   double _distance = 5.0; // miles
-  bool _outdoorSeating = true;
   
   @override
   Widget build(BuildContext context) {
@@ -787,7 +868,6 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                         _priceLevel = 2;
                         _minRating = 0;
                         _distance = 25;
-                        _outdoorSeating = false;
                       });
                     },
                     child: const Text('Reset'),

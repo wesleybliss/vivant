@@ -60,8 +60,9 @@ class PlaceDetails {
   factory PlaceDetails.fromJson(Map<String, dynamic> json) {
     final result = json['result'];
     if (result == null) throw Exception('Result is null');
+    
     final geometry = result['geometry'];
-    final location = geometry['location'];
+    final location = geometry != null ? geometry['location'] : null;
     
     bool? openNow;
     if (result['opening_hours'] != null) {
@@ -71,27 +72,30 @@ class PlaceDetails {
     List<String>? photos;
     if (result['photos'] != null) {
       photos = (result['photos'] as List)
-          .map((p) => p['photo_reference'] as String)
+          .map((p) => p['photo_reference']?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
           .toList();
     }
 
     return PlaceDetails(
-      placeId: result['place_id'],
-      name: result['name'],
-      location: LatLng(location['lat'], location['lng']),
+      placeId: result['place_id'] ?? '',
+      name: result['name'] ?? 'Unknown',
+      location: location != null 
+          ? LatLng(location['lat']?.toDouble() ?? 0.0, location['lng']?.toDouble() ?? 0.0)
+          : const LatLng(0, 0),
       formattedAddress: result['formatted_address'],
       rating: result['rating']?.toDouble(),
-      userRatingsTotal: result['user_ratings_total'],
+      userRatingsTotal: result['user_ratings_total']?.toInt(),
       openNow: openNow,
       photoReferences: photos,
-      priceLevel: result['price_level'],
+      priceLevel: result['price_level']?.toInt(),
       types: result['types'] != null ? List<String>.from(result['types']) : null,
     );
   }
 
   factory PlaceDetails.fromTextSearchJson(Map<String, dynamic> json) {
     final geometry = json['geometry'];
-    final location = geometry['location'];
+    final location = geometry != null ? geometry['location'] : null;
     
     bool? openNow;
     if (json['opening_hours'] != null) {
@@ -101,20 +105,23 @@ class PlaceDetails {
     List<String>? photos;
     if (json['photos'] != null) {
       photos = (json['photos'] as List)
-          .map((p) => p['photo_reference'] as String)
+          .map((p) => p['photo_reference']?.toString() ?? '')
+          .where((s) => s.isNotEmpty)
           .toList();
     }
 
     return PlaceDetails(
-      placeId: json['place_id'],
-      name: json['name'],
-      location: LatLng(location['lat'], location['lng']),
+      placeId: json['place_id'] ?? '',
+      name: json['name'] ?? 'Unknown',
+      location: location != null 
+          ? LatLng(location['lat']?.toDouble() ?? 0.0, location['lng']?.toDouble() ?? 0.0)
+          : const LatLng(0, 0),
       formattedAddress: json['formatted_address'],
       rating: json['rating']?.toDouble(),
-      userRatingsTotal: json['user_ratings_total'],
+      userRatingsTotal: json['user_ratings_total']?.toInt(),
       openNow: openNow,
       photoReferences: photos,
-      priceLevel: json['price_level'],
+      priceLevel: json['price_level']?.toInt(),
       types: json['types'] != null ? List<String>.from(json['types']) : null,
     );
   }
@@ -130,28 +137,39 @@ class PlacesService {
 
   Map<String, String>? get cachedHeaders => _cachedHeaders;
 
+  Future<void> initialize() async {
+    await _getHeaders();
+  }
+
   Future<Map<String, String>> _getHeaders() async {
     if (_cachedHeaders != null) return _cachedHeaders!;
 
     final headers = <String, String>{};
     
     if (Platform.isAndroid) {
-      _packageInfo ??= await PackageInfo.fromPlatform();
-      final package = _packageInfo!.packageName;
-      final sha1 = dotenv.env['GOOGLE_MAPS_API_KEY_ANDROID_SHA1'];
-      
-      if (sha1 != null && sha1.isNotEmpty) {
-        final formattedSha1 = sha1.replaceAll(':', '').toUpperCase();
-        headers['X-Android-Package'] = package;
-        headers['X-Android-Cert'] = formattedSha1;
-        _logger.v('Adding Android restriction headers. Package: $package, SHA1 ends with: ${formattedSha1.substring(formattedSha1.length - 4)}');
-      } else {
-        _logger.w('Platform is Android but GOOGLE_MAPS_API_KEY_ANDROID_SHA1 not found in .env');
+      try {
+        _packageInfo ??= await PackageInfo.fromPlatform();
+        final package = _packageInfo!.packageName;
+        final sha1 = dotenv.env['GOOGLE_MAPS_API_KEY_ANDROID_SHA1'];
+        
+        if (sha1 != null && sha1.isNotEmpty) {
+          final formattedSha1 = sha1.replaceAll(':', '').toUpperCase();
+          headers['X-Android-Package'] = package;
+          headers['X-Android-Cert'] = formattedSha1;
+          _logger.v('Initialized headers. Package: $package, SHA1 ends with: ${formattedSha1.substring(formattedSha1.length - 4)}');
+        } else {
+          _logger.w('GOOGLE_MAPS_API_KEY_ANDROID_SHA1 not found in .env');
+        }
+      } catch (e) {
+        _logger.e('Error initializing Android headers', e);
       }
     } else if (Platform.isIOS) {
-      _packageInfo ??= await PackageInfo.fromPlatform();
-      final bundleId = _packageInfo!.packageName;
-      headers['X-Ios-Bundle-Identifier'] = bundleId;
+      try {
+        _packageInfo ??= await PackageInfo.fromPlatform();
+        headers['X-Ios-Bundle-Identifier'] = _packageInfo!.packageName;
+      } catch (e) {
+        _logger.e('Error initializing iOS headers', e);
+      }
     }
     
     _cachedHeaders = headers;
@@ -223,8 +241,9 @@ class PlacesService {
 
   Future<PlaceDetails?> getPlaceDetails(String placeId) async {
     _logger.i('Getting place details for ID: $placeId');
+    // CRITICAL: Added place_id to fields to prevent factory crash
     final url = Uri.parse(
-        '$_baseUrl/details/json?place_id=$placeId&fields=name,geometry,formatted_address,rating,user_ratings_total,opening_hours,photos,price_level,types&key=$_apiKey');
+        '$_baseUrl/details/json?place_id=$placeId&fields=place_id,name,geometry,formatted_address,rating,user_ratings_total,opening_hours,photos,price_level,types&key=$_apiKey');
 
     try {
       final headers = await _getHeaders();
