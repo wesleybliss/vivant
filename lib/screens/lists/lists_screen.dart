@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:vivant/providers/auth_provider.dart';
 import 'package:vivant/providers/lists_provider.dart';
+import 'package:vivant/providers/theme_provider.dart';
 import 'package:vivant/screens/lists/list_detail_screen.dart';
 
 class ListsScreen extends StatefulWidget {
@@ -25,13 +27,23 @@ class _ListsScreenState extends State<ListsScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final listsProvider = Provider.of<ListsProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.2),
       appBar: AppBar(
-        title: const Text('My Lists'),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        title: Text('Vivant', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         actions: [
+          IconButton(
+            icon: Icon(themeProvider.themeMode == ThemeMode.dark
+                ? Icons.light_mode
+                : Icons.dark_mode),
+            onPressed: () => themeProvider.toggleTheme(),
+            tooltip: 'Toggle Theme',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -43,157 +55,249 @@ class _ListsScreenState extends State<ListsScreen> {
         ],
       ),
       body: SafeArea(
-        child: _buildBody(listsProvider),
+        child: _buildContent(listsProvider),
+      ),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: theme.colorScheme.primary.withOpacity(0.5),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: () {
+            // TODO: Implement create list functionality
+          },
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
 
-  Widget _buildBody(ListsProvider listsProvider) {
+  Widget _buildContent(ListsProvider listsProvider) {
     if (listsProvider.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return _buildLoading();
     }
 
     if (listsProvider.error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red.shade300,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Error loading lists',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                listsProvider.error!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () => listsProvider.loadLists(),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildError(listsProvider);
     }
 
     if (listsProvider.lists.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.list_alt,
-                size: 64,
-                color: Colors.grey.shade300,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No lists yet',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Start by creating your first list',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildEmpty(listsProvider);
     }
 
     return RefreshIndicator(
       onRefresh: () => listsProvider.loadLists(),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: listsProvider.lists.length,
-        itemBuilder: (context, index) {
-          final list = listsProvider.lists[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+      child: _buildListsGrid(listsProvider),
+    );
+  }
+
+  Widget _buildLoading() {
+    return const Center(
+      child: CircularProgressIndicator(),
+    );
+  }
+
+  Widget _buildError(ListsProvider listsProvider) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 80,
+              color: theme.colorScheme.error,
             ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 12,
+            const SizedBox(height: 24),
+            Text(
+              'Error loading lists',
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-              leading: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.indigo.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    list.emoji,
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              listsProvider.error!,
+              style: GoogleFonts.poppins(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => listsProvider.loadLists(),
+              icon: const Icon(Icons.refresh),
+              label: Text('Retry', style: GoogleFonts.poppins()),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmpty(ListsProvider listsProvider) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.list_alt_outlined,
+              size: 80,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No lists yet',
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-              title: Text(
-                list.name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              subtitle: Text(
-                '${list.placeCount ?? 0} places',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ListDetailScreen(list: list),
-                  ),
-                );
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Create your first list to start curating your culinary world.',
+              style: GoogleFonts.poppins(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                // TODO: Implement create list functionality
               },
+              icon: const Icon(Icons.add),
+              label: Text('Create List', style: GoogleFonts.poppins()),
             ),
-          );
-        },
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListsGrid(ListsProvider listsProvider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
+          child: Text(
+            'My Lists',
+            style: GoogleFonts.poppins(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 96),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 20,
+              mainAxisSpacing: 20,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: listsProvider.lists.length,
+            itemBuilder: (context, index) {
+              final list = listsProvider.lists[index];
+              return _buildListCard(list, index);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildListCard(list, int index) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ListDetailScreen(list: list),
+              ),
+            );
+          },
+          child: Stack(
+            children: [
+              // Background Image
+              Positioned.fill(
+                child: Image.network(
+                  'https://picsum.photos/seed/${list.id}/400/600',
+                  fit: BoxFit.cover,
+                ),
+              ),
+              // Gradient Overlay
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.black.withOpacity(0.6),
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.8),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                ),
+              ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      list.name,
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${list.placeCount ?? 0} places',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

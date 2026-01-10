@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:vivant/domain/constants/constants.dart';
 import 'package:vivant/providers/auth_provider.dart';
 import 'package:vivant/providers/lists_provider.dart';
+import 'package:vivant/providers/theme_provider.dart';
 import 'package:vivant/screens/auth/login_screen.dart';
-import 'package:vivant/screens/lists/lists_screen.dart';
+import 'package:vivant/screens/main_screen.dart';
 import 'package:vivant/services/auth_service.dart';
 import 'package:vivant/services/convex_service.dart';
 import 'package:vivant/utils/firebase.dart';
@@ -23,7 +25,7 @@ void main() async {
 
   // Load environment variables
   await dotenv.load(fileName: '.env');
-  
+
   if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
@@ -43,27 +45,11 @@ void main() async {
 
   final authService = AuthService();
   final convexService = ConvexService(baseUrl: convexUrl);
-  
-  runApp(Vivant(
-    authService: authService,
-    convexService: convexService,
-  ));
-}
 
-class Vivant extends StatelessWidget {
-  final AuthService authService;
-  final ConvexService convexService;
-
-  const Vivant({
-    super.key,
-    required this.authService,
-    required this.convexService,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
+  runApp(
+    MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(
             authService: authService,
@@ -74,15 +60,92 @@ class Vivant extends StatelessWidget {
           create: (_) => ListsProvider(convexService: convexService),
         ),
       ],
-      child: MaterialApp(
-        title: 'Vivant',
-        theme: ThemeData(
-          primarySwatch: Colors.grey,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-        ),
-        home: const AuthGate(),
-        debugShowCheckedModeBanner: false,
+      child: const VivantApp(),
+    ),
+  );
+}
+
+class VivantApp extends StatelessWidget {
+  const VivantApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    const MaterialColor primarySeedColor = Colors.deepPurple;
+
+    // Define a common TextTheme
+    final TextTheme appTextTheme = TextTheme(
+      displayLarge:
+          GoogleFonts.oswald(fontSize: 57, fontWeight: FontWeight.bold),
+      titleLarge:
+          GoogleFonts.roboto(fontSize: 22, fontWeight: FontWeight.w500),
+      bodyMedium: GoogleFonts.openSans(fontSize: 14),
+    );
+
+    // Light Theme
+    final ThemeData lightTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primarySeedColor,
+        brightness: Brightness.light,
       ),
+      textTheme: appTextTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: primarySeedColor,
+        foregroundColor: Colors.white,
+        titleTextStyle:
+            GoogleFonts.oswald(fontSize: 24, fontWeight: FontWeight.bold),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.white,
+          backgroundColor: primarySeedColor,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          textStyle:
+              GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+
+    // Dark Theme
+    final ThemeData darkTheme = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primarySeedColor,
+        brightness: Brightness.dark,
+      ),
+      textTheme: appTextTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.grey[900],
+        foregroundColor: Colors.white,
+        titleTextStyle:
+            GoogleFonts.oswald(fontSize: 24, fontWeight: FontWeight.bold),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.black,
+          backgroundColor: primarySeedColor.shade200,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          textStyle:
+              GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'Vivant',
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: themeProvider.themeMode,
+          home: const AuthGate(),
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }
@@ -116,7 +179,7 @@ class _AuthGateState extends State<AuthGate> {
           ),
         );
       case AuthState.authenticated:
-        return const ListsScreen();
+        return const MainScreen();
       case AuthState.unauthenticated:
       case AuthState.error:
         return const LoginScreen();
