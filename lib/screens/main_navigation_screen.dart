@@ -34,14 +34,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map),
-            label: 'Discover',
+            icon: Icon(Icons.location_on_outlined),
+            selectedIcon: Icon(Icons.location_on),
+            label: 'Explore',
           ),
           NavigationDestination(
             icon: Icon(Icons.bookmark_border),
             selectedIcon: Icon(Icons.bookmark),
-            label: 'Lists',
+            label: 'Saved',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

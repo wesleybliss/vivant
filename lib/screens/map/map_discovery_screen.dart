@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import 'package:vivant/screens/map/place_search_screen.dart';
+
 class MapDiscoveryScreen extends StatefulWidget {
   const MapDiscoveryScreen({super.key});
 
@@ -10,8 +12,9 @@ class MapDiscoveryScreen extends StatefulWidget {
 
 class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
   GoogleMapController? _mapController;
-  String _selectedCategory = 'All Places';
-  final List<String> _categories = ['All Places', 'Restaurants', 'Bars', 'Cafes'];
+  String _selectedCategory = '';
+  String _searchQuery = ''; // Store the search query
+  final List<String> _categories = ['Restaurants', 'Coffee', 'Hotels', 'Gas', 'Groceries', 'Parks'];
   
   // Stub location - NYC
   static const LatLng _center = LatLng(40.7580, -73.9855);
@@ -41,7 +44,7 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
               Marker(
                 markerId: const MarkerId('luna_rooftop'),
                 position: const LatLng(40.7589, -73.9851),
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
               ),
             },
           ),
@@ -59,37 +62,73 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                   children: [
                     // Search bar
                     Material(
-                      elevation: 4,
+                      elevation: 2,
                       borderRadius: BorderRadius.circular(30),
-                      shadowColor: Colors.black26,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Search places...',
-                          hintStyle: TextStyle(color: Colors.grey.shade400),
-                          prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
-                          suffixIcon: Container(
-                            margin: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              shape: BoxShape.circle,
+                      color: Colors.white,
+                      child: InkWell(
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PlaceSearchScreen(),
                             ),
-                            child: IconButton(
-                              icon: const Icon(Icons.tune, size: 20),
-                              onPressed: () {
-                                _showFilters();
-                              },
-                              padding: EdgeInsets.zero,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
+                          );
+                          
+                          if (result != null && result is String && result.isNotEmpty) {
+                            setState(() {
+                              _searchQuery = result;
+                            });
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(30),
+                        child: Container(
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            children: [
+                              Icon(Icons.search, color: Colors.grey.shade700),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _searchQuery.isNotEmpty ? _searchQuery : 'Search here',
+                                  style: TextStyle(
+                                    color: _searchQuery.isNotEmpty ? Colors.black87 : Colors.grey.shade600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                              if (_searchQuery.isNotEmpty)
+                                IconButton(
+                                  icon: const Icon(Icons.close, color: Colors.grey),
+                                  onPressed: () {
+                                    setState(() {
+                                      _searchQuery = '';
+                                    });
+                                  },
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.all(8),
+                                )
+                              else
+                                IconButton(
+                                  icon: const Icon(Icons.mic, color: Colors.black54),
+                                  onPressed: () {},
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.all(8),
+                                ),
+                              const SizedBox(width: 8),
+                              CircleAvatar(
+                                radius: 15,
+                                backgroundColor: colorScheme.primaryContainer,
+                                child: Text(
+                                  'W',
+                                  style: TextStyle(
+                                    color: colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -100,17 +139,45 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                     // Category chips
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Row(
-                        children: _categories.map((category) {
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12, right: 8),
+                            child: ActionChip(
+                              avatar: const Icon(Icons.tune, size: 18),
+                              label: const Text('Filters'),
+                              onPressed: _showFilters,
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(color: Colors.grey.shade300),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                            ),
+                          ),
+                          ..._categories.map((category) {
                           final isSelected = category == _selectedCategory;
+                          IconData? icon;
+                          switch (category) {
+                            case 'Restaurants': icon = Icons.restaurant; break;
+                            case 'Coffee': icon = Icons.coffee; break;
+                            case 'Hotels': icon = Icons.hotel; break;
+                            case 'Gas': icon = Icons.local_gas_station; break;
+                            case 'Groceries': icon = Icons.local_grocery_store; break;
+                            case 'Parks': icon = Icons.park; break;
+                          }
+                          
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
+                              avatar: icon != null ? Icon(icon, size: 18, color: isSelected ? colorScheme.onPrimaryContainer : Colors.grey.shade700) : null,
                               label: Text(category),
                               selected: isSelected,
+                              showCheckmark: false,
                               onSelected: (selected) {
                                 setState(() {
-                                  _selectedCategory = category;
+                                  _selectedCategory = selected ? category : '';
                                 });
                               },
                               backgroundColor: Colors.white,
@@ -119,17 +186,25 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                                 color: isSelected 
                                     ? colorScheme.onPrimaryContainer 
                                     : Colors.grey.shade700,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
+                                horizontal: 12,
+                                vertical: 8,
                               ),
                               elevation: 2,
-                              shadowColor: Colors.black26,
+                              shadowColor: Colors.black12,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                                side: BorderSide(
+                                  color: isSelected ? Colors.transparent : Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
                             ),
                           );
-                        }).toList(),
+                        }),
+                        ],
                       ),
                     ),
                   ],
@@ -138,22 +213,30 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
             ),
           ),
           
-          // Floating action buttons (right side)
+          // Layers button (Top Right)
           Positioned(
             right: 16,
-            bottom: 200,
+            top: 110, // Below search bar area
+            child: FloatingActionButton.small(
+              heroTag: 'layers',
+              onPressed: () {},
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8), // Square-ish
+              ),
+              child: const Icon(Icons.layers_outlined, color: Colors.black54),
+            ),
+          ),
+
+          // Bottom Right buttons (Location & Directions)
+          Positioned(
+            right: 16,
+            bottom: 140, // Above bottom sheet (approx)
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Layers button
-                FloatingActionButton.small(
-                  heroTag: 'layers',
-                  onPressed: () {},
-                  backgroundColor: Colors.white,
-                  child: const Icon(Icons.layers, color: Colors.black87),
-                ),
-                const SizedBox(height: 8),
                 // My location button
-                FloatingActionButton.small(
+                FloatingActionButton(
                   heroTag: 'location',
                   onPressed: () {
                     _mapController?.animateCamera(
@@ -161,29 +244,29 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                     );
                   },
                   backgroundColor: Colors.white,
-                  child: const Icon(Icons.my_location, color: Colors.black87),
+                  foregroundColor: Colors.blue,
+                  child: const Icon(Icons.my_location),
+                ),
+                const SizedBox(height: 16),
+                // Directions button
+                FloatingActionButton(
+                  heroTag: 'directions',
+                  onPressed: () {},
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.directions, color: Colors.white),
                 ),
               ],
             ),
           ),
           
-          // Category indicator button (bottom right, coffee cup icon from mockup)
-          Positioned(
-            right: 16,
-            bottom: 140,
-            child: FloatingActionButton(
-              heroTag: 'category',
-              onPressed: () {},
-              backgroundColor: colorScheme.primary,
-              child: const Icon(Icons.coffee, color: Colors.white),
-            ),
-          ),
-          
           // Bottom sheet with place cards
           DraggableScrollableSheet(
-            initialChildSize: 0.25,
+            initialChildSize: 0.3,
             minChildSize: 0.15,
-            maxChildSize: 0.6,
+            maxChildSize: 0.9,
             builder: (context, scrollController) {
               return Container(
                 decoration: const BoxDecoration(
@@ -197,55 +280,89 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                     ),
                   ],
                 ),
-                child: Column(
+                child: ListView(
+                  controller: scrollController,
+                  padding: EdgeInsets.zero,
                   children: [
                     // Handle
-                    Container(
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 8),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
                     ),
                     
-                    // Places list
-                    Expanded(
-                      child: ListView(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          _buildPlaceCard(
-                            name: 'Luna Rooftop',
-                            category: 'Cocktail Bar',
-                            distance: '0.2 mi',
-                            rating: 4.8,
-                            isOpen: true,
-                            closingTime: 'Closes 2 AM',
-                            imageIcon: Icons.nightlife,
-                          ),
-                          _buildPlaceCard(
-                            name: 'The Glass House',
-                            category: 'Modern European',
-                            distance: '0.5 mi',
-                            rating: 4.7,
-                            isOpen: true,
-                            closingTime: 'Closes 11 PM',
-                            imageIcon: Icons.restaurant,
-                          ),
-                          _buildPlaceCard(
-                            name: 'Café Artisan',
-                            category: 'Coffee Shop',
-                            distance: '0.3 mi',
-                            rating: 4.6,
-                            isOpen: true,
-                            closingTime: 'Closes 8 PM',
-                            imageIcon: Icons.coffee,
-                          ),
-                        ],
+                    // Header
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: Text(
+                        'Explore nearby',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                    ),
+                    
+                    // Places list items
+                    _buildPlaceCard(
+                      name: 'Luna Rooftop',
+                      category: 'Cocktail Bar',
+                      distance: '0.2 mi',
+                      rating: 4.8,
+                      isOpen: true,
+                      closingTime: 'Closes 2 AM',
+                      imageIcon: Icons.nightlife,
+                    ),
+                    _buildPlaceCard(
+                      name: 'The Glass House',
+                      category: 'Modern European',
+                      distance: '0.5 mi',
+                      rating: 4.7,
+                      isOpen: true,
+                      closingTime: 'Closes 11 PM',
+                      imageIcon: Icons.restaurant,
+                    ),
+                    _buildPlaceCard(
+                      name: 'Café Artisan',
+                      category: 'Coffee Shop',
+                      distance: '0.3 mi',
+                      rating: 4.6,
+                      isOpen: true,
+                      closingTime: 'Closes 8 PM',
+                      imageIcon: Icons.coffee,
+                    ),
+                    _buildPlaceCard(
+                      name: 'Central Park North',
+                      category: 'Park',
+                      distance: '0.8 mi',
+                      rating: 4.9,
+                      isOpen: true,
+                      closingTime: 'Open 24h',
+                      imageIcon: Icons.park,
+                    ),
+                    _buildPlaceCard(
+                      name: 'Joe\'s Pizza',
+                      category: 'Pizza',
+                      distance: '1.2 mi',
+                      rating: 4.5,
+                      isOpen: true,
+                      closingTime: 'Closes 4 AM',
+                      imageIcon: Icons.local_pizza,
+                    ),
+                    _buildPlaceCard(
+                      name: 'Grand Hotel',
+                      category: 'Hotel',
+                      distance: '0.1 mi',
+                      rating: 4.4,
+                      isOpen: true,
+                      closingTime: 'Open 24h',
+                      imageIcon: Icons.hotel,
                     ),
                   ],
                 ),
@@ -268,94 +385,74 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     
-    return Container(
-      width: 300,
-      margin: const EdgeInsets.only(right: 12, bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Image placeholder
-          Container(
-            width: 100,
-            height: 100,
-            decoration: BoxDecoration(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
+    return InkWell(
+      onTap: () {
+        // TODO: Navigate to details
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image placeholder
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primaryContainer,
+                    colorScheme.secondaryContainer,
+                  ],
+                ),
               ),
-              gradient: LinearGradient(
-                colors: [
-                  colorScheme.primaryContainer,
-                  colorScheme.secondaryContainer,
-                ],
+              child: Icon(
+                imageIcon,
+                size: 32,
+                color: colorScheme.onPrimaryContainer,
               ),
             ),
-            child: Icon(
-              imageIcon,
-              size: 40,
-              color: colorScheme.onPrimaryContainer,
-            ),
-          ),
-          
-          // Details
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
+            
+            const SizedBox(width: 12),
+            
+            // Details
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        rating.toString(),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.star,
-                              size: 12,
-                              color: Colors.blue.shade700,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              rating.toString(),
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ],
+                      const SizedBox(width: 2),
+                      Icon(Icons.star, size: 14, color: Colors.amber.shade700),
+                      const SizedBox(width: 2),
+                      Text(
+                        '(124)', // Placeholder review count
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ],
@@ -364,37 +461,29 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                   Text(
                     '$category • $distance',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 14,
                       color: Colors.grey.shade600,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.green.shade50,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Open Now',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.green.shade700,
-                          ),
+                      Text(
+                        isOpen ? 'Open' : 'Closed',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: isOpen ? Colors.green.shade700 : Colors.red.shade700,
                         ),
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '• $closingTime',
                         style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ],
@@ -402,8 +491,8 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -554,7 +643,7 @@ class _SearchFiltersSheetState extends State<SearchFiltersSheet> {
                 value: _minRating,
                 min: 0,
                 max: 5.0,
-                divisions: 100,
+                divisions: 50,
                 label: _minRating == 0 ? 'Any' : _minRating.toStringAsFixed(1),
                 onChanged: (value) {
                   setState(() {
