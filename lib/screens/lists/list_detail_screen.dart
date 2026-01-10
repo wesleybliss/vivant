@@ -6,10 +6,7 @@ import 'package:vivant/providers/lists_provider.dart';
 class ListDetailScreen extends StatefulWidget {
   final ListModel list;
 
-  const ListDetailScreen({
-    super.key,
-    required this.list,
-  });
+  const ListDetailScreen({super.key, required this.list});
 
   @override
   State<ListDetailScreen> createState() => _ListDetailScreenState();
@@ -21,8 +18,10 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     super.initState();
     // Load places for this list
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ListsProvider>(context, listen: false)
-          .loadPlacesForList(widget.list.id);
+      Provider.of<ListsProvider>(
+        context,
+        listen: false,
+      ).loadPlacesForList(widget.list.id);
     });
   }
 
@@ -32,21 +31,14 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     final places = listsProvider.getPlacesForList(widget.list.id);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F7F5),
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(widget.list.emoji),
-            const SizedBox(width: 8),
-            Text(widget.list.name),
-          ],
-        ),
-        backgroundColor: Colors.indigo,
-        foregroundColor: Colors.white,
+        title: Text('${widget.list.emoji}  ${widget.list.name}'),
+        backgroundColor: const Color(0xFFF8F7F5),
+        elevation: 0,
+        foregroundColor: Colors.black,
       ),
-      body: SafeArea(
-        child: _buildBody(places),
-      ),
+      body: SafeArea(child: _buildBody(places)),
     );
   }
 
@@ -58,11 +50,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.place_outlined,
-                size: 64,
-                color: Colors.grey.shade300,
-              ),
+              Icon(Icons.place_outlined, size: 64, color: Colors.grey.shade300),
               const SizedBox(height: 16),
               Text(
                 'No places yet',
@@ -75,10 +63,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
               const SizedBox(height: 8),
               Text(
                 'Add places to this list from search',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -93,10 +78,11 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
       itemBuilder: (context, index) {
         final place = places[index];
         return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          elevation: 2,
+          margin: const EdgeInsets.only(bottom: 16),
+          elevation: 0,
+          color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -128,11 +114,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(
-                            Icons.star,
-                            size: 16,
-                            color: Colors.amber,
-                          ),
+                          const Icon(Icons.star, size: 16, color: Colors.amber),
                           const SizedBox(width: 4),
                           Text(
                             place.rating.toStringAsFixed(1),
@@ -147,7 +129,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Address
                 Row(
                   children: [
@@ -169,7 +151,7 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                
+
                 // Review count and price level
                 Row(
                   children: [

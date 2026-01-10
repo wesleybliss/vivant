@@ -7,6 +7,7 @@ import 'package:vivant/providers/auth_provider.dart';
 import 'package:vivant/providers/lists_provider.dart';
 import 'package:vivant/screens/auth/login_screen.dart';
 import 'package:vivant/screens/lists/lists_screen.dart';
+import 'package:vivant/screens/app_shell.dart';
 import 'package:vivant/services/auth_service.dart';
 import 'package:vivant/services/convex_service.dart';
 import 'package:vivant/utils/firebase.dart';
@@ -23,7 +24,7 @@ void main() async {
 
   // Load environment variables
   await dotenv.load(fileName: '.env');
-  
+
   if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
@@ -43,11 +44,8 @@ void main() async {
 
   final authService = AuthService();
   final convexService = ConvexService(baseUrl: convexUrl);
-  
-  runApp(Vivant(
-    authService: authService,
-    convexService: convexService,
-  ));
+
+  runApp(Vivant(authService: authService, convexService: convexService));
 }
 
 class Vivant extends StatelessWidget {
@@ -77,8 +75,24 @@ class Vivant extends StatelessWidget {
       child: MaterialApp(
         title: 'Vivant',
         theme: ThemeData(
-          primarySwatch: Colors.grey,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
+          scaffoldBackgroundColor: const Color(0xFFF8F7F5),
+          fontFamily: 'Inter',
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.indigo,
+            background: const Color(0xFFF8F7F5),
+          ),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFFF8F7F5),
+            elevation: 0,
+            foregroundColor: Colors.black,
+            centerTitle: false,
+          ),
+          bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+            backgroundColor: Colors.white,
+            selectedItemColor: Colors.indigo,
+            unselectedItemColor: Colors.grey,
+            elevation: 8,
+          ),
         ),
         home: const AuthGate(),
         debugShowCheckedModeBanner: false,
@@ -110,13 +124,9 @@ class _AuthGateState extends State<AuthGate> {
     switch (authProvider.state) {
       case AuthState.initial:
       case AuthState.loading:
-        return const Scaffold(
-          body: Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       case AuthState.authenticated:
-        return const ListsScreen();
+        return const AppShell();
       case AuthState.unauthenticated:
       case AuthState.error:
         return const LoginScreen();
