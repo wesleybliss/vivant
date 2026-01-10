@@ -123,11 +123,16 @@ class PlaceDetails {
 class PlacesService {
   final Logger _logger = Logger('PlacesService');
   PackageInfo? _packageInfo;
+  Map<String, String>? _cachedHeaders;
 
   String get _apiKey => dotenv.env['GOOGLE_MAPS_API_KEY'] ?? 'AIzaSyBs9FDiIQKQh9YVqI9cVgh4FWH9_AF-NUY';
   static const String _baseUrl = 'https://maps.googleapis.com/maps/api/place';
 
+  Map<String, String>? get cachedHeaders => _cachedHeaders;
+
   Future<Map<String, String>> _getHeaders() async {
+    if (_cachedHeaders != null) return _cachedHeaders!;
+
     final headers = <String, String>{};
     
     if (Platform.isAndroid) {
@@ -149,6 +154,7 @@ class PlacesService {
       headers['X-Ios-Bundle-Identifier'] = bundleId;
     }
     
+    _cachedHeaders = headers;
     return headers;
   }
 

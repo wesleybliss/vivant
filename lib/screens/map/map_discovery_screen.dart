@@ -436,15 +436,18 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                       )
                     else if (_searchResults.isNotEmpty)
                       ..._searchResults.map((place) {
-                        String? photoUrl;
-                        if (place.photoReferences != null && place.photoReferences!.isNotEmpty) {
-                          final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? 'AIzaSyBs9FDiIQKQh9YVqI9cVgh4FWH9_AF-NUY';
-                          photoUrl = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photoReferences![0]}&key=$apiKey';
+                        final List<String> photoUrls = [];
+                        final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? 'AIzaSyBs9FDiIQKQh9YVqI9cVgh4FWH9_AF-NUY';
+                        
+                        if (place.photoReferences != null) {
+                          for (var ref in place.photoReferences!.take(5)) {
+                            photoUrls.add('https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=$ref&key=$apiKey');
+                          }
                         }
 
                         return _buildPlaceCard(
                           place: place,
-                          photoUrl: photoUrl,
+                          photoUrls: photoUrls,
                         );
                       })
                     else if (_searchQuery.isNotEmpty)
@@ -476,6 +479,8 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                           types: ['cocktail_bar'],
                           formattedAddress: '620 8th Ave, New York, NY',
                         ),
+                        // Mock photo for visual testing if needed
+                        photoUrls: [], 
                       ),
                       _buildPlaceCard(
                         place: PlaceDetails(
@@ -514,9 +519,10 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
   
   Widget _buildPlaceCard({
     required PlaceDetails place,
-    String? photoUrl,
+    List<String> photoUrls = const [],
   }) {
     final colorScheme = Theme.of(context).colorScheme;
+    final headers = _placesService.cachedHeaders;
     
     // Format price level
     String priceDisplay = '';
@@ -539,140 +545,157 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
         // TODO: Navigate to details
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+          border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 0.5)),
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image or Placeholder
-                Container(
-                  width: 80,
-                  height: 80,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        colorScheme.primaryContainer,
-                        colorScheme.secondaryContainer,
-                      ],
-                    ),
-                  ),
-                  child: photoUrl != null
-                      ? Image.network(
-                          photoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Icon(
-                            Icons.location_on,
-                            size: 32,
-                            color: colorScheme.onPrimaryContainer,
-                          ),
-                        )
-                      : Icon(
-                          Icons.location_on,
-                          size: 32,
-                          color: colorScheme.onPrimaryContainer,
-                        ),
-                ),
-                
-                const SizedBox(width: 12),
-                
-                // Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        place.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Text(
-                            (place.rating ?? 0.0).toString(),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 2),
-                          Icon(Icons.star, size: 14, color: Colors.amber.shade700),
-                          const SizedBox(width: 2),
-                          Text(
-                            '(${place.userRatingsTotal ?? 0})',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          Text(
-                            priceDisplay,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        categoryDisplay,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      if (place.formattedAddress != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Text Details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          place.formattedAddress!,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
+                          place.name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: -0.2,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              (place.rating ?? 0.0).toString(),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(Icons.star, size: 14, color: Colors.amber.shade700),
+                            const SizedBox(width: 2),
+                            Text(
+                              '(${place.userRatingsTotal ?? 0})',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            Text(
+                              priceDisplay,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          categoryDisplay,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        if (place.formattedAddress != null)
                           Text(
-                            (place.openNow ?? true) ? 'Open' : 'Closed',
+                            place.formattedAddress!,
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: (place.openNow ?? true) ? Colors.green.shade700 : Colors.red.shade700,
+                              color: Colors.grey.shade600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
-                    ],
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              (place.openNow ?? true) ? 'Open' : 'Closed',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: (place.openNow ?? true) ? Colors.green.shade700 : Colors.red.shade700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  
+                  // Primary Thumbnail (if no carousel) or Small placeholder
+                  if (photoUrls.isEmpty)
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade100,
+                      ),
+                      child: Icon(Icons.image_outlined, color: Colors.grey.shade400),
+                    ),
+                ],
+              ),
             ),
+            
+            if (photoUrls.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: photoUrls.length,
+                  itemBuilder: (context, index) {
+                    return Container(
+                      width: 160,
+                      margin: const EdgeInsets.only(right: 8),
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey.shade100,
+                      ),
+                      child: Image.network(
+                        photoUrls[index],
+                        headers: headers,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(Icons.broken_image_outlined, color: Colors.grey.shade400),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+
             const SizedBox(height: 12),
             // Action Buttons
-            Row(
-              children: [
-                _buildActionButton(Icons.directions_outlined, 'Directions', colorScheme.primary),
-                const SizedBox(width: 8),
-                _buildActionButton(Icons.phone_outlined, 'Call', colorScheme.primary),
-                const SizedBox(width: 8),
-                _buildActionButton(Icons.bookmark_border, 'Save', colorScheme.primary),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  _buildActionButton(Icons.directions_outlined, 'Directions', colorScheme.primary),
+                  const SizedBox(width: 8),
+                  _buildActionButton(Icons.phone_outlined, 'Call', colorScheme.primary),
+                  const SizedBox(width: 8),
+                  _buildActionButton(Icons.bookmark_border, 'Save', colorScheme.primary),
+                ],
+              ),
             ),
           ],
         ),
