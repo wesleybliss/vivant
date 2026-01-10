@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vivant/providers/auth_provider.dart';
 import 'package:vivant/providers/lists_provider.dart';
+import 'package:vivant/screens/settings/settings_screen.dart';
 import 'package:vivant/utils/logger.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -136,9 +137,9 @@ class ProfileScreen extends StatelessWidget {
                     'Settings',
                     Icons.settings_outlined,
                     () {
-                      // Navigate to settings (future task)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Settings coming soon!')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
                       );
                     },
                   ),

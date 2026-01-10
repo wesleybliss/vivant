@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:vivant/domain/constants/constants.dart';
 import 'package:vivant/providers/auth_provider.dart';
 import 'package:vivant/providers/lists_provider.dart';
+import 'package:vivant/providers/settings_provider.dart';
 import 'package:vivant/screens/auth/login_screen.dart';
 import 'package:vivant/screens/main_navigation_screen.dart';
 import 'package:vivant/services/auth_service.dart';
@@ -73,39 +74,75 @@ class Vivant extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ListsProvider(convexService: convexService),
         ),
-      ],
-      child: MaterialApp(
-        title: 'Vivant',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6495ED), // Cornflower blue from mockup
-            brightness: Brightness.light,
-          ),
-          cardTheme: CardThemeData(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-          ),
-          chipTheme: ChipThemeData(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          visualDensity: VisualDensity.adaptivePlatformDensity,
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(),
         ),
-        home: const AuthGate(),
-        debugShowCheckedModeBanner: false,
+      ],
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, child) {
+          return MaterialApp(
+            title: 'Vivant',
+            themeMode: settings.themeMode,
+            theme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF6495ED), // Cornflower blue
+                brightness: Brightness.light,
+              ),
+              cardTheme: CardThemeData(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+              chipTheme: ChipThemeData(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              visualDensity: VisualDensity.adaptivePlatformDensity,
+            ),
+            darkTheme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF6495ED),
+                brightness: Brightness.dark,
+              ),
+              cardTheme: CardThemeData(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+              chipTheme: ChipThemeData(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              visualDensity: VisualDensity.adaptivePlatformDensity,
+            ),
+            home: const AuthGate(),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }

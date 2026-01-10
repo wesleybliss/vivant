@@ -43,7 +43,7 @@ class LoginScreen extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
@@ -55,8 +55,8 @@ class LoginScreen extends StatelessWidget {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Colors.orange.shade300.withOpacity(0.8),
-                                  Colors.red.shade300.withOpacity(0.8),
+                                  Colors.orange.shade300.withValues(alpha: 0.8),
+                                  Colors.red.shade300.withValues(alpha: 0.8),
                                 ],
                               ),
                             ),
@@ -90,7 +90,7 @@ class LoginScreen extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 20,
                               offset: const Offset(0, 8),
                             ),
@@ -102,8 +102,8 @@ class LoginScreen extends StatelessWidget {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  Colors.amber.shade300.withOpacity(0.8),
-                                  Colors.orange.shade200.withOpacity(0.8),
+                                  Colors.amber.shade300.withValues(alpha: 0.8),
+                                  Colors.orange.shade200.withValues(alpha: 0.8),
                                 ],
                               ),
                             ),
