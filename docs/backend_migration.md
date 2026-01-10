@@ -1,4 +1,6 @@
-# Backend Migration: Clerk to Firebase Auth
+# Backend Migration: Clerk to Firebase Auth (Completed)
+
+> **Note**: This migration has already been implemented in the Flutter application. This document is kept for reference regarding backend changes.
 
 ## Overview
 Your Convex backend needs to be updated to verify Firebase ID tokens instead of Clerk session tokens.

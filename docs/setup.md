@@ -130,4 +130,4 @@ Once auth and lists are working:
 
 ---
 
-For detailed implementation notes, see `IMPLEMENTATION_PROGRESS.md`
+For detailed implementation notes, see `progress.md`
