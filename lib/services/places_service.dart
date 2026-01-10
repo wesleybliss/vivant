@@ -218,7 +218,7 @@ class PlacesService {
   Future<PlaceDetails?> getPlaceDetails(String placeId) async {
     _logger.i('Getting place details for ID: $placeId');
     final url = Uri.parse(
-        '$_baseUrl/details/json?place_id=$placeId&fields=name,geometry,formatted_address,rating,user_ratings_total,opening_hours,photos&key=$_apiKey');
+        '$_baseUrl/details/json?place_id=$placeId&fields=name,geometry,formatted_address,rating,user_ratings_total,opening_hours,photos,price_level,types&key=$_apiKey');
 
     try {
       final headers = await _getHeaders();

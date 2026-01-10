@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:vivant/screens/map/place_search_screen.dart';
 import 'package:vivant/services/places_service.dart';
@@ -434,15 +435,18 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                         ),
                       )
                     else if (_searchResults.isNotEmpty)
-                      ..._searchResults.map((place) => _buildPlaceCard(
-                        name: place.name,
-                        category: 'Place', 
-                        distance: '', 
-                        rating: place.rating ?? 0.0,
-                        isOpen: place.openNow ?? true,
-                        closingTime: '', 
-                        imageIcon: Icons.location_on,
-                      ))
+                      ..._searchResults.map((place) {
+                        String? photoUrl;
+                        if (place.photoReferences != null && place.photoReferences!.isNotEmpty) {
+                          final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? 'AIzaSyBs9FDiIQKQh9YVqI9cVgh4FWH9_AF-NUY';
+                          photoUrl = 'https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${place.photoReferences![0]}&key=$apiKey';
+                        }
+
+                        return _buildPlaceCard(
+                          place: place,
+                          photoUrl: photoUrl,
+                        );
+                      })
                     else if (_searchQuery.isNotEmpty)
                       Center(
                         child: Padding(
@@ -462,58 +466,40 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                       )
                     else ...[
                       _buildPlaceCard(
-                        name: 'Luna Rooftop',
-                        category: 'Cocktail Bar',
-                        distance: '0.2 mi',
-                        rating: 4.8,
-                        isOpen: true,
-                        closingTime: 'Closes 2 AM',
-                        imageIcon: Icons.nightlife,
+                        place: PlaceDetails(
+                          placeId: 'luna',
+                          name: 'Luna Rooftop',
+                          location: const LatLng(40.7589, -73.9851),
+                          rating: 4.8,
+                          userRatingsTotal: 1240,
+                          priceLevel: 3,
+                          types: ['cocktail_bar'],
+                          formattedAddress: '620 8th Ave, New York, NY',
+                        ),
                       ),
                       _buildPlaceCard(
-                        name: 'The Glass House',
-                        category: 'Modern European',
-                        distance: '0.5 mi',
-                        rating: 4.7,
-                        isOpen: true,
-                        closingTime: 'Closes 11 PM',
-                        imageIcon: Icons.restaurant,
+                        place: PlaceDetails(
+                          placeId: 'glass',
+                          name: 'The Glass House',
+                          location: const LatLng(40.7595, -73.9845),
+                          rating: 4.7,
+                          userRatingsTotal: 856,
+                          priceLevel: 4,
+                          types: ['restaurant'],
+                          formattedAddress: '54 Pearl St, New York, NY',
+                        ),
                       ),
                       _buildPlaceCard(
-                        name: 'Café Artisan',
-                        category: 'Coffee Shop',
-                        distance: '0.3 mi',
-                        rating: 4.6,
-                        isOpen: true,
-                        closingTime: 'Closes 8 PM',
-                        imageIcon: Icons.coffee,
-                      ),
-                      _buildPlaceCard(
-                        name: 'Central Park North',
-                        category: 'Park',
-                        distance: '0.8 mi',
-                        rating: 4.9,
-                        isOpen: true,
-                        closingTime: 'Open 24h',
-                        imageIcon: Icons.park,
-                      ),
-                      _buildPlaceCard(
-                        name: 'Joe\'s Pizza',
-                        category: 'Pizza',
-                        distance: '1.2 mi',
-                        rating: 4.5,
-                        isOpen: true,
-                        closingTime: 'Closes 4 AM',
-                        imageIcon: Icons.local_pizza,
-                      ),
-                      _buildPlaceCard(
-                        name: 'Grand Hotel',
-                        category: 'Hotel',
-                        distance: '0.1 mi',
-                        rating: 4.4,
-                        isOpen: true,
-                        closingTime: 'Open 24h',
-                        imageIcon: Icons.hotel,
+                        place: PlaceDetails(
+                          placeId: 'artisan',
+                          name: 'Café Artisan',
+                          location: const LatLng(40.7575, -73.9865),
+                          rating: 4.6,
+                          userRatingsTotal: 432,
+                          priceLevel: 2,
+                          types: ['cafe'],
+                          formattedAddress: '123 5th Ave, New York, NY',
+                        ),
                       ),
                     ],
                   ],
@@ -527,16 +513,27 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
   }
   
   Widget _buildPlaceCard({
-    required String name,
-    required String category,
-    required String distance,
-    required double rating,
-    required bool isOpen,
-    required String closingTime,
-    required IconData imageIcon,
+    required PlaceDetails place,
+    String? photoUrl,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     
+    // Format price level
+    String priceDisplay = '';
+    if (place.priceLevel != null) {
+      priceDisplay = ' • ${"\$" * place.priceLevel!}';
+    }
+
+    // Format category
+    String categoryDisplay = 'Place';
+    if (place.types != null && place.types!.isNotEmpty) {
+      // Get the first interesting type
+      final interestingTypes = place.types!.where((t) => t != 'point_of_interest' && t != 'establishment').toList();
+      if (interestingTypes.isNotEmpty) {
+        categoryDisplay = interestingTypes[0].replaceAll('_', ' ').split(' ').map((s) => s[0].toUpperCase() + s.substring(1)).join(' ');
+      }
+    }
+
     return InkWell(
       onTap: () {
         // TODO: Navigate to details
@@ -546,107 +543,164 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
         decoration: BoxDecoration(
           border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
           children: [
-            // Image placeholder
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colorScheme.primaryContainer,
-                    colorScheme.secondaryContainer,
-                  ],
-                ),
-              ),
-              child: Icon(
-                imageIcon,
-                size: 32,
-                color: colorScheme.onPrimaryContainer,
-              ),
-            ),
-            
-            const SizedBox(width: 12),
-            
-            // Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image or Placeholder
+                Container(
+                  width: 80,
+                  height: 80,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        colorScheme.primaryContainer,
+                        colorScheme.secondaryContainer,
+                      ],
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Row(
+                  child: photoUrl != null
+                      ? Image.network(
+                          photoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.location_on,
+                            size: 32,
+                            color: colorScheme.onPrimaryContainer,
+                          ),
+                        )
+                      : Icon(
+                          Icons.location_on,
+                          size: 32,
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                ),
+                
+                const SizedBox(width: 12),
+                
+                // Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        rating.toString(),
+                        place.name,
                         style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(width: 2),
-                      Icon(Icons.star, size: 14, color: Colors.amber.shade700),
-                      const SizedBox(width: 2),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            (place.rating ?? 0.0).toString(),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(Icons.star, size: 14, color: Colors.amber.shade700),
+                          const SizedBox(width: 2),
+                          Text(
+                            '(${place.userRatingsTotal ?? 0})',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          Text(
+                            priceDisplay,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
                       Text(
-                        '(124)', // Placeholder review count
+                        categoryDisplay,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 13,
                           color: Colors.grey.shade600,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${category.isNotEmpty ? category : "Place"}${distance.isNotEmpty ? " • $distance" : ""}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Text(
-                        isOpen ? 'Open' : 'Closed',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: isOpen ? Colors.green.shade700 : Colors.red.shade700,
-                        ),
-                      ),
-                      if (closingTime.isNotEmpty) ...[
-                        const SizedBox(width: 4),
+                      const SizedBox(height: 2),
+                      if (place.formattedAddress != null)
                         Text(
-                          '• $closingTime',
+                          place.formattedAddress!,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13,
                             color: Colors.grey.shade600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            (place.openNow ?? true) ? 'Open' : 'Closed',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: (place.openNow ?? true) ? Colors.green.shade700 : Colors.red.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Action Buttons
+            Row(
+              children: [
+                _buildActionButton(Icons.directions_outlined, 'Directions', colorScheme.primary),
+                const SizedBox(width: 8),
+                _buildActionButton(Icons.phone_outlined, 'Call', colorScheme.primary),
+                const SizedBox(width: 8),
+                _buildActionButton(Icons.bookmark_border, 'Save', colorScheme.primary),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
