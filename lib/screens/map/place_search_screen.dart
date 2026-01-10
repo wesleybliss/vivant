@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:vivant/services/places_service.dart';
 
 class PlaceSearchScreen extends StatefulWidget {
   const PlaceSearchScreen({super.key});
@@ -10,11 +12,15 @@ class PlaceSearchScreen extends StatefulWidget {
 class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final PlacesService _placesService = PlacesService();
+  
+  List<PlacePrediction> _predictions = [];
+  Timer? _debounce;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // Auto-focus the search field
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -22,9 +28,33 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    
+    if (query.isEmpty) {
+      setState(() {
+        _predictions = [];
+        _isLoading = false;
+      });
+      return;
+    }
+
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      setState(() => _isLoading = true);
+      final results = await _placesService.getAutocomplete(query);
+      if (mounted) {
+        setState(() {
+          _predictions = results;
+          _isLoading = false;
+        });
+      }
+    });
   }
 
   @override
@@ -63,42 +93,74 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
                       child: TextField(
                         controller: _searchController,
                         focusNode: _focusNode,
+                        onChanged: _onSearchChanged,
+                        onSubmitted: (value) {
+                          if (value.isNotEmpty) {
+                            Navigator.pop(context, value);
+                          }
+                        },
                         decoration: const InputDecoration(
                           hintText: 'Search here',
                           border: InputBorder.none,
                           icon: Icon(Icons.search, color: Colors.grey),
                         ),
-                        onSubmitted: (value) {
-                          // TODO: Implement actual search
-                          Navigator.pop(context, value);
-                        },
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.mic),
-                    onPressed: () {},
-                  ),
+                  if (_isLoading)
+                     const Padding(
+                       padding: EdgeInsets.symmetric(horizontal: 8.0),
+                       child: SizedBox(
+                         width: 20,
+                         height: 20,
+                         child: CircularProgressIndicator(strokeWidth: 2),
+                       ),
+                     )
+                  else
+                    IconButton(
+                      icon: const Icon(Icons.mic),
+                      onPressed: () {},
+                    ),
                 ],
               ),
             ),
             
-            // Recent Searches / Suggestions
+            // Recent Searches / Suggestions / Predictions
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  _buildSectionHeader('Recent'),
-                  _buildRecentItem('Luna Rooftop', 'Cocktail Bar • 0.2 mi'),
-                  _buildRecentItem('The Glass House', 'Modern European • 0.5 mi'),
-                  const Divider(),
-                  _buildSectionHeader('Try searching for'),
-                  _buildSuggestionItem(Icons.restaurant, 'Restaurants'),
-                  _buildSuggestionItem(Icons.local_cafe, 'Coffee'),
-                  _buildSuggestionItem(Icons.hotel, 'Hotels'),
-                  _buildSuggestionItem(Icons.local_gas_station, 'Gas'),
-                ],
-              ),
+              child: _predictions.isNotEmpty
+                  ? ListView.builder(
+                      itemCount: _predictions.length,
+                      itemBuilder: (context, index) {
+                        final prediction = _predictions[index];
+                        return ListTile(
+                          leading: const Icon(Icons.location_on_outlined, color: Colors.black54),
+                          title: Text(
+                            prediction.mainText,
+                            style: const TextStyle(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(prediction.secondaryText),
+                          onTap: () {
+                            Navigator.pop(context, prediction);
+                          },
+                        );
+                      },
+                    )
+                  : ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: [
+                        if (_searchController.text.isEmpty) ...[
+                          _buildSectionHeader('Recent'),
+                          _buildRecentItem('Luna Rooftop', 'Cocktail Bar • 0.2 mi'),
+                          _buildRecentItem('The Glass House', 'Modern European • 0.5 mi'),
+                          const Divider(),
+                          _buildSectionHeader('Try searching for'),
+                          _buildSuggestionItem(Icons.restaurant, 'Restaurants'),
+                          _buildSuggestionItem(Icons.local_cafe, 'Coffee'),
+                          _buildSuggestionItem(Icons.hotel, 'Hotels'),
+                          _buildSuggestionItem(Icons.local_gas_station, 'Gas'),
+                        ]
+                      ],
+                    ),
             ),
           ],
         ),
@@ -126,7 +188,13 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
       title: Text(title),
       subtitle: Text(subtitle),
       onTap: () {
-        Navigator.pop(context, title);
+        // TODO: Handle mock recent items properly
+        Navigator.pop(context, PlacePrediction(
+          description: title,
+          placeId: 'mock_id',
+          mainText: title,
+          secondaryText: subtitle
+        ));
       },
     );
   }
@@ -136,7 +204,8 @@ class _PlaceSearchScreenState extends State<PlaceSearchScreen> {
       leading: Icon(icon, color: Colors.grey),
       title: Text(text),
       onTap: () {
-        Navigator.pop(context, text);
+         // TODO: Handle category search
+         Navigator.pop(context, text); 
       },
     );
   }

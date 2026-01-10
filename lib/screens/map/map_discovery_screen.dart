@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'package:vivant/screens/map/place_search_screen.dart';
+import 'package:vivant/services/places_service.dart';
+import 'package:vivant/utils/logger.dart';
 
 class MapDiscoveryScreen extends StatefulWidget {
   const MapDiscoveryScreen({super.key});
@@ -11,13 +13,132 @@ class MapDiscoveryScreen extends StatefulWidget {
 }
 
 class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
+  final Logger _logger = Logger('MapDiscoveryScreen');
   GoogleMapController? _mapController;
+  final PlacesService _placesService = PlacesService();
+  
   String _selectedCategory = '';
   String _searchQuery = ''; // Store the search query
+  bool _isSearching = false; // Track searching state
   final List<String> _categories = ['Restaurants', 'Coffee', 'Hotels', 'Gas', 'Groceries', 'Parks'];
+  List<PlaceDetails> _searchResults = []; // Store search results for the bottom sheet
   
   // Stub location - NYC
   static const LatLng _center = LatLng(40.7580, -73.9855);
+  Set<Marker> _markers = {
+    Marker(
+      markerId: const MarkerId('luna_rooftop'),
+      position: const LatLng(40.7589, -73.9851),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+    ),
+  };
+
+  Future<void> _handlePlaceSelection(dynamic result) async {
+    if (result == null) {
+      _logger.d('Place selection result is null');
+      return;
+    }
+
+    _logger.i('Handling place selection: $result');
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      if (result is PlacePrediction) {
+        _logger.d('Prediction selected: ${result.description}');
+        setState(() => _searchQuery = result.mainText);
+        
+        // Fetch details
+        final details = await _placesService.getPlaceDetails(result.placeId);
+        if (details != null) {
+          _logger.d('Place details fetched: ${details.name}');
+          if (_mapController != null) {
+            _mapController!.animateCamera(
+              CameraUpdate.newLatLngZoom(details.location, 16.0),
+            );
+          }
+          
+          setState(() {
+            _searchResults = [details];
+            _markers = {
+              Marker(
+                markerId: MarkerId(details.placeId),
+                position: details.location,
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                infoWindow: InfoWindow(title: details.name, snippet: details.formattedAddress),
+              ),
+            };
+          });
+        } else {
+          _logger.w('Failed to fetch place details for: ${result.placeId}');
+        }
+      } else if (result is String) {
+        _logger.d('Text search submitted: $result');
+        setState(() => _searchQuery = result);
+        
+        final results = await _placesService.searchPlaces(result);
+        _logger.i('Search results found: ${results.length}');
+        
+        setState(() {
+          _searchResults = results;
+          if (results.isNotEmpty) {
+            // Create markers from results
+            final markers = results.map((place) => Marker(
+              markerId: MarkerId(place.placeId),
+              position: place.location,
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+              infoWindow: InfoWindow(title: place.name, snippet: place.formattedAddress),
+            )).toSet();
+
+            _markers = markers;
+
+            // Zoom to fit all markers
+            if (_mapController != null) {
+              if (markers.length == 1) {
+                _mapController!.animateCamera(
+                  CameraUpdate.newLatLngZoom(markers.first.position, 16.0),
+                );
+              } else {
+                LatLngBounds bounds = _boundsFromLatLngList(markers.map((m) => m.position).toList());
+                _mapController!.animateCamera(
+                  CameraUpdate.newLatLngBounds(bounds, 50),
+                );
+              }
+            }
+          } else {
+            _logger.i('No results found for search query');
+            _markers = {};
+          }
+        });
+      }
+    } catch (e, stack) {
+      _logger.e('Error handling place selection', e, stack);
+    } finally {
+      setState(() {
+        _isSearching = false;
+      });
+    }
+  }
+  
+  LatLngBounds _boundsFromLatLngList(List<LatLng> list) {
+    double? x0, x1, y0, y1;
+    for (LatLng latLng in list) {
+      if (x0 == null) {
+        x0 = x1 = latLng.latitude;
+        y0 = y1 = latLng.longitude;
+      } else {
+        if (latLng.latitude > x1!) x1 = latLng.latitude;
+        if (latLng.latitude < x0) x0 = latLng.latitude;
+        if (latLng.longitude > y1!) y1 = latLng.longitude;
+        if (latLng.longitude < y0!) y0 = latLng.longitude;
+      }
+    }
+    return LatLngBounds(
+      northeast: LatLng(x1!, y1!),
+      southwest: LatLng(x0!, y0!),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,13 +161,7 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
             // Stub markers - would be loaded from API
-            markers: {
-              Marker(
-                markerId: const MarkerId('luna_rooftop'),
-                position: const LatLng(40.7589, -73.9851),
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-              ),
-            },
+            markers: _markers,
           ),
           
           // Top search bar and filters
@@ -73,12 +188,7 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                               builder: (context) => const PlaceSearchScreen(),
                             ),
                           );
-                          
-                          if (result != null && result is String && result.isNotEmpty) {
-                            setState(() {
-                              _searchQuery = result;
-                            });
-                          }
+                          _handlePlaceSelection(result);
                         },
                         borderRadius: BorderRadius.circular(30),
                         child: Container(
@@ -298,11 +408,17 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                     ),
                     
                     // Header
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                       child: Text(
-                        'Explore nearby',
-                        style: TextStyle(
+                        _isSearching
+                            ? 'Searching...'
+                            : _searchResults.isNotEmpty
+                                ? 'Search results'
+                                : _searchQuery.isNotEmpty
+                                    ? 'No results found'
+                                    : 'Explore nearby',
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
                         ),
@@ -310,60 +426,96 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                     ),
                     
                     // Places list items
-                    _buildPlaceCard(
-                      name: 'Luna Rooftop',
-                      category: 'Cocktail Bar',
-                      distance: '0.2 mi',
-                      rating: 4.8,
-                      isOpen: true,
-                      closingTime: 'Closes 2 AM',
-                      imageIcon: Icons.nightlife,
-                    ),
-                    _buildPlaceCard(
-                      name: 'The Glass House',
-                      category: 'Modern European',
-                      distance: '0.5 mi',
-                      rating: 4.7,
-                      isOpen: true,
-                      closingTime: 'Closes 11 PM',
-                      imageIcon: Icons.restaurant,
-                    ),
-                    _buildPlaceCard(
-                      name: 'Café Artisan',
-                      category: 'Coffee Shop',
-                      distance: '0.3 mi',
-                      rating: 4.6,
-                      isOpen: true,
-                      closingTime: 'Closes 8 PM',
-                      imageIcon: Icons.coffee,
-                    ),
-                    _buildPlaceCard(
-                      name: 'Central Park North',
-                      category: 'Park',
-                      distance: '0.8 mi',
-                      rating: 4.9,
-                      isOpen: true,
-                      closingTime: 'Open 24h',
-                      imageIcon: Icons.park,
-                    ),
-                    _buildPlaceCard(
-                      name: 'Joe\'s Pizza',
-                      category: 'Pizza',
-                      distance: '1.2 mi',
-                      rating: 4.5,
-                      isOpen: true,
-                      closingTime: 'Closes 4 AM',
-                      imageIcon: Icons.local_pizza,
-                    ),
-                    _buildPlaceCard(
-                      name: 'Grand Hotel',
-                      category: 'Hotel',
-                      distance: '0.1 mi',
-                      rating: 4.4,
-                      isOpen: true,
-                      closingTime: 'Open 24h',
-                      imageIcon: Icons.hotel,
-                    ),
+                    if (_isSearching)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (_searchResults.isNotEmpty)
+                      ..._searchResults.map((place) => _buildPlaceCard(
+                        name: place.name,
+                        category: 'Place', 
+                        distance: '', 
+                        rating: place.rating ?? 0.0,
+                        isOpen: place.openNow ?? true,
+                        closingTime: '', 
+                        imageIcon: Icons.location_on,
+                      ))
+                    else if (_searchQuery.isNotEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: Column(
+                            children: [
+                              Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No places found for "$_searchQuery"',
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else ...[
+                      _buildPlaceCard(
+                        name: 'Luna Rooftop',
+                        category: 'Cocktail Bar',
+                        distance: '0.2 mi',
+                        rating: 4.8,
+                        isOpen: true,
+                        closingTime: 'Closes 2 AM',
+                        imageIcon: Icons.nightlife,
+                      ),
+                      _buildPlaceCard(
+                        name: 'The Glass House',
+                        category: 'Modern European',
+                        distance: '0.5 mi',
+                        rating: 4.7,
+                        isOpen: true,
+                        closingTime: 'Closes 11 PM',
+                        imageIcon: Icons.restaurant,
+                      ),
+                      _buildPlaceCard(
+                        name: 'Café Artisan',
+                        category: 'Coffee Shop',
+                        distance: '0.3 mi',
+                        rating: 4.6,
+                        isOpen: true,
+                        closingTime: 'Closes 8 PM',
+                        imageIcon: Icons.coffee,
+                      ),
+                      _buildPlaceCard(
+                        name: 'Central Park North',
+                        category: 'Park',
+                        distance: '0.8 mi',
+                        rating: 4.9,
+                        isOpen: true,
+                        closingTime: 'Open 24h',
+                        imageIcon: Icons.park,
+                      ),
+                      _buildPlaceCard(
+                        name: 'Joe\'s Pizza',
+                        category: 'Pizza',
+                        distance: '1.2 mi',
+                        rating: 4.5,
+                        isOpen: true,
+                        closingTime: 'Closes 4 AM',
+                        imageIcon: Icons.local_pizza,
+                      ),
+                      _buildPlaceCard(
+                        name: 'Grand Hotel',
+                        category: 'Hotel',
+                        distance: '0.1 mi',
+                        rating: 4.4,
+                        isOpen: true,
+                        closingTime: 'Open 24h',
+                        imageIcon: Icons.hotel,
+                      ),
+                    ],
                   ],
                 ),
               );
@@ -459,7 +611,7 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$category • $distance',
+                    '${category.isNotEmpty ? category : "Place"}${distance.isNotEmpty ? " • $distance" : ""}',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey.shade600,
@@ -478,14 +630,16 @@ class _MapDiscoveryScreenState extends State<MapDiscoveryScreen> {
                           color: isOpen ? Colors.green.shade700 : Colors.red.shade700,
                         ),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '• $closingTime',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
+                      if (closingTime.isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        Text(
+                          '• $closingTime',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
