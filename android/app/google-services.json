@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "480934611158-ksf35kg667f5cqdltvmmirgtaa6rv4tb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gammagamma.vivant",
+            "certificate_hash": "9f2450c4ef664d0bcddee625a3515728017f5c88"
+          }
+        },
+        {
           "client_id": "480934611158-62oudm5vmukmj6p227rtpnvb5925ukbl.apps.googleusercontent.com",
           "client_type": 3
         }

@@ -34,14 +34,26 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
+	        <key>UISupportedInterfaceOrientations~ipad</key>
+	        <array>
+	                <string>UIInterfaceOrientationPortrait</string>
+	                <string>UIInterfaceOrientationPortraitUpsideDown</string>
+	                <string>UIInterfaceOrientationLandscapeLeft</string>
+	                <string>UIInterfaceOrientationLandscapeRight</string>
+	        </array>
+	        <key>CFBundleURLTypes</key>
+	        <array>
+	                <dict>
+	                        <key>CFBundleTypeRole</key>
+	                        <string>Editor</string>
+	                        <key>CFBundleURLSchemes</key>
+	                        <array>
+	                                <string>com.googleusercontent.apps.480934611158-9kt5qhgol30v3a48eajcmv5flmfpuo6s</string>
+	                        </array>
+	                </dict>
+	        </array>
+	        <key>CADisableMinimumFrameDurationOnPhone</key>
+	
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>

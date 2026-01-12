@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>480934611158-9kt5qhgol30v3a48eajcmv5flmfpuo6s.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.480934611158-9kt5qhgol30v3a48eajcmv5flmfpuo6s</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>480934611158-0b1o9rrcgmka0o0loenv7qeovh3ervcu.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBvHHVi1fC-FCWC_Zst64khN7RNp_hbPgQ</string>
+	<key>GCM_SENDER_ID</key>
+	<string>480934611158</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.gammagamma.vivant</string>
+	<key>PROJECT_ID</key>
+	<string>vivant-24bb2</string>
+	<key>STORAGE_BUCKET</key>
+	<string>vivant-24bb2.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:480934611158:ios:efd8ee74b5a9fae8592177</string>
+</dict>
+</plist>

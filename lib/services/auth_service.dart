@@ -18,7 +18,7 @@ class AuthService {
   void _initGoogleSignIn() {
     _googleSignIn = GoogleSignIn(
       scopes: ['email', 'profile'],
-      // Let it auto-detect from google-services.json
+      serverClientId: '480934611158-62oudm5vmukmj6p227rtpnvb5925ukbl.apps.googleusercontent.com',
     );
   }
 
