@@ -1,0 +1,74 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "geometry": {
+        "coordinates": [
+          -74.0570237,
+          4.6476474
+        ],
+        "type": "Point"
+      },
+      "properties": {
+        "date": "2026-01-09T03:27:49Z",
+        "google_maps_url": "http://maps.google.com/?cid=18075779506080583624",
+        "location": {
+          "address": "Cl. 65 #3B-53, Bogotá, Colombia",
+          "country_code": "CO",
+          "name": "Decadente"
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "properties": {
+        "date": "2016-09-13T18:06:49Z",
+        "google_maps_url": "http://maps.google.com/?cid=1415175993781951590",
+        "location": {
+          "address": "14 Orchard St, New York, NY 10002, United States",
+          "country_code": "US",
+          "name": "Bar Belly"
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -73.9915670,
+          40.7149708
+        ],
+        "type": "Point"
+      },
+      "properties": {
+        "date": "2016-09-13T18:06:42Z",
+        "google_maps_url": "http://maps.google.com/?cid=3411915827822844886",
+        "location": {
+          "address": "49 Canal St, New York, NY 10002, United States",
+          "country_code": "US",
+          "name": "Dimes"
+        }
+      },
+      "type": "Feature"
+    },
+    {
+      "geometry": {
+        "coordinates": [
+          -73.0694695,
+          40.9460383
+        ],
+        "type": "Point"
+      },
+      "properties": {
+        "date": "2010-08-10T00:22:03Z",
+        "google_maps_url": "http://maps.google.com/?cid=2354979527232890531",
+        "location": {
+          "address": "45 Chandler Sq, Port Jefferson, NY 11777, United States",
+          "country_code": "US",
+          "name": "You, Me and Tea"
+        }
+      },
+      "type": "Feature"
+    }
+  ]
+}

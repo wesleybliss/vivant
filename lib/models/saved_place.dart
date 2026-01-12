@@ -13,6 +13,9 @@ class SavedPlace {
   final double? lat;
   final double? lng;
   final int createdAt;
+  final bool? importedFromGoogle;
+  final String? googleMapsUrl;
+  final String? countryCode;
 
   SavedPlace({
     required this.id,
@@ -29,6 +32,9 @@ class SavedPlace {
     this.lat,
     this.lng,
     required this.createdAt,
+    this.importedFromGoogle,
+    this.googleMapsUrl,
+    this.countryCode,
   });
 
   factory SavedPlace.fromJson(Map<String, dynamic> json) {
@@ -47,6 +53,9 @@ class SavedPlace {
       lat: json['lat'] != null ? (json['lat'] as num).toDouble() : null,
       lng: json['lng'] != null ? (json['lng'] as num).toDouble() : null,
       createdAt: json['createdAt'] as int,
+      importedFromGoogle: json['importedFromGoogle'] as bool?,
+      googleMapsUrl: json['googleMapsUrl'] as String?,
+      countryCode: json['countryCode'] as String?,
     );
   }
 
@@ -66,6 +75,9 @@ class SavedPlace {
       'lat': lat,
       'lng': lng,
       'createdAt': createdAt,
+      'importedFromGoogle': importedFromGoogle,
+      'googleMapsUrl': googleMapsUrl,
+      'countryCode': countryCode,
     };
   }
 }
